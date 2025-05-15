@@ -18,11 +18,12 @@
     <div class="results-container"></div>
 </body>
 <script>
+    const BACKEND_URL = "http://localhost:3000";
     async function findProduct(event) {
         if (event) event.preventDefault();
         const query = document.querySelector('.search').value;
         if (!query) return;
-        const res = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
+        const res = await fetch(`${BACKEND_URL}/api/search?query=${encodeURIComponent(query)}`);
         const data = await res.json();
         if (typeof renderResults === "function") {
             renderResults(data);

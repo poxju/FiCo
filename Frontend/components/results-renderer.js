@@ -4,11 +4,17 @@ function renderResults(results = []) {
         container.innerHTML = "<p>No results found.</p>";
         return;
     }
-    container.innerHTML = results.map(item => `
-        <div class="result-item">
-            <div><strong>${item.name}</strong></div>
-            <div>Condition: ${item.condition}</div>
-            <div>Price: ${item.price}</div>
+    container.innerHTML = `
+        <div class="card-list">
+            ${results.map(item => `
+                <div class="result-card">
+                    <div class="card-title">${item.name}</div>
+                    <div class="card-details">
+                        <span class="card-condition">${item.condition}</span>
+                        <span class="card-price">${item.price}</span>
+                    </div>
+                </div>
+            `).join('')}
         </div>
-    `).join('');
+    `;
 }
