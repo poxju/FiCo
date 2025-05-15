@@ -1,0 +1,54 @@
+html {
+  box-sizing: border-box;
+  background: #ffc600;
+  font-family: "Gill Sans Extrabold", sans-serif;
+  font-size: 30px;
+  font-weight: 200;
+}
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+.hl {
+  background: #ffc600;
+}
+.search-form {
+  max-width: 400px;
+  margin: 50px auto;
+  padding: 10px;
+  display: flex;
+  align-items: stretch; /* Make input and button same height */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  background: #fffbe6;
+  border-radius: 5px;
+  overflow: hidden; /* Ensures border-radius applies to both */
+}
+
+input.search {
+  margin: 0;
+  text-align: center;
+  outline: 0;
+  border: none;
+  width: 100%;
+  font-size: 20px;
+  font-family: inherit;
+  font-weight: 200;
+  padding: 0 20px;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+}
+
+.search-form button {
+  background: #ffc600;
+  color: #222;
+  border-radius: 5px;
+  font-family: inherit;
+}
+
+.search-form button:hover {
+  background: #ffd84d;
+}
+
+.brand {
+    text-align: center;
+}

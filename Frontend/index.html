@@ -3,9 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>FiCo</title>
+    <link rel="stylesheet" href="/Frontend/styles/style.css">
 </head>
 <body>
-    
+    <div class="brand">
+        <h1>FiCo</h1>
+        <p>Find Cheapest, Compare Smartest</p>
+    </div>
+    <form class="search-form" onsubmit="return findProduct(event)">
+        <input type="text" class="search" placeholder="Search products..." />
+        <button type="submit">Search</button>
+    </form>
+    <div class="results-container"></div>
 </body>
+<script>
+    async function findProduct(event) {
+        if (event) event.preventDefault();
+        const query = document.querySelector('.search').value;
+        if (!query) return;
+        const res = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        if (typeof renderResults === "function") {
+            renderResults(data);
+        }
+    }
+</script>
+<script src="./components/results-renderer.js"></script>
 </html>
