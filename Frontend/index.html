@@ -3,32 +3,659 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FiCo</title>
+    <title>FiCo - Find Cheapest Products, Compare Smartly</title>
+    <meta name="description" content="Compare online products with FiCo, find the best prices. Get personalized recommendations with AI assistant. The most comprehensive price comparison platform.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛍️</text></svg>">
     <link rel="stylesheet" href="/Frontend/styles/style.css">
+    <link rel="stylesheet" href="/Frontend/styles/ai-chat.css">
 </head>
 <body>
     <div class="brand">
-        <h1>FiCo</h1>
+        <h1>🛍️ FiCo</h1>
         <p>Find Cheapest, Compare Smartest</p>
     </div>
-    <form class="search-form" onsubmit="return findProduct(event)">
-        <input type="text" class="search" placeholder="Search products..." />
-        <button type="submit">Search</button>
-    </form>
-    <div class="results-container"></div>
+    
+    <!-- Search Options -->
+    <div class="search-options">
+        <div class="search-mode-toggle">
+            <button class="mode-btn active" onclick="switchMode('normal')" id="normal-mode">
+                🔍 Quick Search
+            </button>
+            <button class="mode-btn" onclick="switchMode('ai')" id="ai-mode">
+                🤖 AI Assistant Search
+            </button>
+        </div>
+    </div>
+    
+    <!-- Normal Search -->
+    <div id="normal-search" class="search-container active">
+        <form class="search-form" onsubmit="return findProduct(event)">
+            <input 
+                type="text" 
+                class="search" 
+                placeholder="Search for products... (e.g. iPhone 15, Nike shoes)" 
+                required
+                autocomplete="off"
+            />
+            <button type="submit">🔍 Search</button>
+        </form>
+        <p class="search-description">
+            🎯 Quick search - just type the product name directly
+        </p>
+    </div>
+    
+    <!-- AI Search -->
+    <div id="ai-search" class="search-container">
+        <div class="ai-search-form">
+            <textarea 
+                id="ai-search-input"
+                placeholder="e.g. Budget $500, looking for a powerful gaming laptop. Must have 16GB RAM and SSD..."
+                rows="3"
+                onkeydown="handleAISearchKeyDown(event)"
+            ></textarea>
+            <button onclick="performAISearch()" id="ai-search-btn">
+                <span>🤖 Search with AI</span>
+            </button>
+        </div>
+        <div class="ai-features">
+            <div class="ai-feature">
+                <span class="ai-feature-icon">💡</span>
+                <span>Specify your budget</span>
+            </div>
+            <div class="ai-feature">
+                <span class="ai-feature-icon">🎯</span>
+                <span>Describe intended use</span>
+            </div>
+            <div class="ai-feature">
+                <span class="ai-feature-icon">⚡</span>
+                <span>Add special requirements</span>
+            </div>
+        </div>
+        <div class="ai-examples">
+            <p><strong>Example searches:</strong></p>
+            <div class="example-queries">
+                <button onclick="setExampleQuery('Budget $1500, ergonomic office chair for home office work')">
+                    Office chair
+                </button>
+                <button onclick="setExampleQuery('Beginner photographer, $800 budget camera recommendation')">
+                    Camera
+                </button>
+                <button onclick="setExampleQuery('Apartment-sized refrigerator, $2500 budget')">
+                    Refrigerator
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="results-container">
+        <!-- Results will appear here -->
+    </div>
+    
+    <!-- Loading indicator -->
+    <div id="loading" style="display: none; text-align: center; color: white; font-size: 1.2em; margin: 20px;">
+        <div style="display: inline-block; animation: spin 1s linear infinite;">⏳</div>
+        <span id="loading-text">Searching products...</span>
+    </div>
+
+    <style>
+        /* Prevent zoom on input focus for iOS */
+        @media screen and (-webkit-min-device-pixel-ratio:0) {
+            select, textarea, input[type="text"] {
+                font-size: 16px;
+            }
+        }
+        
+        /* Touch-friendly interactions */
+        .mode-btn, .example-queries button, #ai-search-btn, .search-form button {
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        
+        /* Improve touch targets */
+        .mode-btn {
+            min-height: 44px;
+        }
+        
+        .example-queries button {
+            min-height: 40px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .search:focus, #ai-search-input:focus {
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+        }
+        
+        /* Search Mode Styles */
+        .search-options {
+            max-width: 600px;
+            margin: 0 auto 20px;
+            padding: 0 20px;
+        }
+        
+        .search-mode-toggle {
+            display: flex;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50px;
+            padding: 8px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .mode-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.7);
+            padding: 15px 25px;
+            border-radius: 40px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .mode-btn.active {
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .search-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 20px;
+            opacity: 0;
+            height: 0;
+            overflow: hidden;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .search-container.active {
+            opacity: 1;
+            height: auto;
+            margin-bottom: 20px;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        
+        .search-description {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 15px;
+            font-size: 14px;
+        }
+        
+        /* AI Search Styles */
+        .ai-search-form {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+            margin-bottom: 15px;
+        }
+        
+        #ai-search-input {
+            width: 100%;
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            border-radius: 15px;
+            padding: 15px 20px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            outline: none;
+            background: white;
+            transition: border-color 0.2s ease;
+            min-height: 60px;
+            margin-bottom: 15px;
+        }
+        
+        #ai-search-input:focus {
+            border-color: #667eea;
+        }
+        
+        #ai-search-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        #ai-search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .ai-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .ai-feature {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 20px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+            backdrop-filter: blur(10px);
+        }
+        
+        .ai-feature-icon {
+            font-size: 20px;
+        }
+        
+        .ai-examples {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            color: white;
+        }
+        
+        .ai-examples p {
+            margin: 0 0 15px 0;
+            font-weight: 600;
+        }
+        
+        .example-queries {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .example-queries button {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .example-queries button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px 0;
+            }
+            
+            .brand {
+                margin-bottom: 20px;
+                padding: 15px 10px;
+            }
+            
+            .brand h1 {
+                font-size: 2.5em;
+                margin-bottom: 8px;
+            }
+            
+            .brand p {
+                font-size: 1em;
+            }
+            
+            .search-options {
+                margin-bottom: 15px;
+                padding: 0 10px;
+            }
+            
+            .search-mode-toggle {
+                flex-direction: column;
+                gap: 5px;
+                padding: 5px;
+                border-radius: 25px;
+            }
+            
+            .mode-btn {
+                padding: 12px 20px;
+                font-size: 14px;
+                border-radius: 20px;
+            }
+            
+            .search-container {
+                padding: 0 10px;
+            }
+            
+            .search-container.active {
+                margin-bottom: 15px;
+            }
+            
+            .ai-search-form {
+                padding: 15px;
+                margin-bottom: 10px;
+                border-radius: 15px;
+            }
+            
+            #ai-search-input {
+                padding: 12px 15px;
+                font-size: 16px;
+                min-height: 50px;
+                margin-bottom: 12px;
+                border-radius: 12px;
+            }
+            
+            #ai-search-btn {
+                padding: 12px 20px;
+                font-size: 15px;
+                border-radius: 12px;
+            }
+            
+            .ai-features {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                margin-bottom: 10px;
+            }
+            
+            .ai-feature {
+                padding: 12px 15px;
+                font-size: 14px;
+                border-radius: 12px;
+            }
+            
+            .ai-feature-icon {
+                font-size: 18px;
+            }
+            
+            .ai-examples {
+                padding: 15px;
+                border-radius: 12px;
+            }
+            
+            .ai-examples p {
+                margin-bottom: 12px;
+                font-size: 14px;
+            }
+            
+            .example-queries {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .example-queries button {
+                padding: 10px 15px;
+                font-size: 12px;
+                text-align: left;
+                border-radius: 15px;
+            }
+            
+            .search-description {
+                font-size: 12px;
+                margin-top: 10px;
+            }
+            
+            #loading {
+                margin: 15px 10px;
+                font-size: 1em;
+            }
+        }
+        
+        /* Extra small screens */
+        @media (max-width: 480px) {
+            .brand h1 {
+                font-size: 2em;
+            }
+            
+            .brand p {
+                font-size: 0.9em;
+            }
+            
+            .search-mode-toggle {
+                border-radius: 20px;
+                padding: 4px;
+            }
+            
+            .mode-btn {
+                padding: 10px 15px;
+                font-size: 13px;
+                border-radius: 16px;
+            }
+            
+            .ai-search-form {
+                padding: 12px;
+                border-radius: 12px;
+            }
+            
+            #ai-search-input {
+                padding: 10px 12px;
+                font-size: 15px;
+                border-radius: 10px;
+            }
+            
+            #ai-search-btn {
+                padding: 10px 15px;
+                font-size: 14px;
+                border-radius: 10px;
+            }
+            
+            .ai-feature {
+                padding: 10px 12px;
+                font-size: 13px;
+                gap: 8px;
+                border-radius: 10px;
+            }
+            
+            .ai-examples {
+                padding: 12px;
+                border-radius: 10px;
+            }
+            
+            .example-queries button {
+                padding: 8px 12px;
+                font-size: 11px;
+                border-radius: 12px;
+            }
+        }
+    </style>
 </body>
 <script>
     const BACKEND_URL = "http://localhost:3000";
-    async function findProduct(event) {
-        if (event) event.preventDefault();
-        const query = document.querySelector('.search').value;
-        if (!query) return;
-        const res = await fetch(`${BACKEND_URL}/api/search?query=${encodeURIComponent(query)}`);
-        const data = await res.json();
-        if (typeof renderResults === "function") {
-            renderResults(data);
+    let currentMode = 'normal';
+    
+    function switchMode(mode) {
+        currentMode = mode;
+        
+        // Update button states
+        document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+        document.getElementById(mode + '-mode').classList.add('active');
+        
+        // Update search containers
+        document.querySelectorAll('.search-container').forEach(container => {
+            container.classList.remove('active');
+        });
+        document.getElementById(mode + '-search').classList.add('active');
+    }
+    
+    function setExampleQuery(query) {
+        document.getElementById('ai-search-input').value = query;
+    }
+    
+    function handleAISearchKeyDown(event) {
+        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+            event.preventDefault();
+            performAISearch();
         }
     }
+    
+    async function performAISearch() {
+        const query = document.getElementById('ai-search-input').value.trim();
+        if (!query) {
+            alert('Please enter search text');
+            return;
+        }
+        
+        const loadingElement = document.getElementById('loading');
+        const loadingText = document.getElementById('loading-text');
+        const resultsContainer = document.querySelector('.results-container');
+        
+        // Show loading
+        loadingText.textContent = 'AI assistant analyzing...';
+        loadingElement.style.display = 'block';
+        resultsContainer.innerHTML = '';
+        
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/ai-search`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query: query })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            // Hide loading
+            loadingElement.style.display = 'none';
+            
+            if (data.error) {
+                resultsContainer.innerHTML = `
+                    <div class="no-results">
+                        <h3>❌ An error occurred</h3>
+                        <p>${data.error}</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Show AI response if available
+            if (data.response) {
+                resultsContainer.innerHTML = `
+                    <div class="ai-response">
+                        <h3>🤖 AI Assistant Recommendation</h3>
+                        <p>${data.response}</p>
+                    </div>
+                `;
+            }
+            
+            // Show products
+            if (data.products && data.products.length > 0) {
+                if (typeof renderResults === "function") {
+                    renderResults(data.products);
+                }
+            }
+            
+        } catch (error) {
+            loadingElement.style.display = 'none';
+            console.error('AI search error:', error);
+            resultsContainer.innerHTML = `
+                <div class="no-results">
+                    <h3>❌ An error occurred</h3>
+                    <p>Could not connect to AI service. Please try again later.</p>
+                </div>
+            `;
+        }
+    }
+    
+    async function findProduct(event) {
+        if (event) event.preventDefault();
+        
+        const query = document.querySelector('.search').value.trim();
+        if (!query) {
+            alert('Please enter a product to search');
+            return false;
+        }
+        
+        const loadingElement = document.getElementById('loading');
+        const loadingText = document.getElementById('loading-text');
+        const resultsContainer = document.querySelector('.results-container');
+        
+        // Show loading
+        loadingText.textContent = 'Searching products...';
+        loadingElement.style.display = 'block';
+        resultsContainer.innerHTML = '';
+        
+        try {
+            const response = await fetch(`${BACKEND_URL}/api/search?query=${encodeURIComponent(query)}`);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            
+            // Hide loading
+            loadingElement.style.display = 'none';
+            
+            if (typeof renderResults === "function") {
+                renderResults(data);
+            }
+        } catch (error) {
+            // Hide loading
+            loadingElement.style.display = 'none';
+            
+            console.error('Search error:', error);
+            resultsContainer.innerHTML = `
+                <div class="no-results">
+                    <h3>❌ An error occurred</h3>
+                    <p>Could not connect to server. Please try again later.</p>
+                    <p style="font-size: 0.9em; margin-top: 10px; opacity: 0.7;">
+                        Make sure the backend server is running (http://localhost:3000)
+                    </p>
+                </div>
+            `;
+        }
+        
+        return false;
+    }
+    
+    // Enter key ile normal arama
+    document.addEventListener('DOMContentLoaded', () => {
+        const searchInput = document.querySelector('.search');
+        if (searchInput) {
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    findProduct(e);
+                }
+            });
+        }
+    });
+    
+    // Example searches suggestions
+    const searchSuggestions = [
+        "iPhone 15",
+        "Samsung Galaxy",
+        "MacBook",
+        "Nike Air Max",
+        "PlayStation 5",
+        "AirPods",
+        "Camera",
+        "Coffee Maker"
+    ];
+    
+    // Random placeholder
+    document.addEventListener('DOMContentLoaded', () => {
+        const searchInput = document.querySelector('.search');
+        if (searchInput) {
+            const randomSuggestion = searchSuggestions[Math.floor(Math.random() * searchSuggestions.length)];
+            searchInput.placeholder = `Search for products... (e.g. ${randomSuggestion})`;
+        }
+    });
 </script>
 <script src="./components/results-renderer.js"></script>
+<script src="./components/ai-chat.js"></script>
 </html>
